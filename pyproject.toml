@@ -46,7 +46,7 @@ Issues = "https://github.com/brunobcardoso/sqltap-profiler/issues"
 Documentation = "https://github.com/brunobcardoso/sqltap-profiler#readme"
 
 [tool.setuptools]
-packages = ["sqltap"]
+packages = ["sqltap", "sqltap.templates"]
 package-data = {sqltap = ["templates/*.mako"]}
 
 [tool.isort]
