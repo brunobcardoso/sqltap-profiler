@@ -1,0 +1,15 @@
+# Development requirements for building wheels
+setuptools>=45
+wheel
+build
+cibuildwheel
+
+# Runtime dependencies
+SQLAlchemy >= 1.4
+Mako >= 0.4.1
+Werkzeug >= 0.9.6
+sqlparse >= 0.1.15
+
+# Testing
+pytest>=6.0
+pytest-cov

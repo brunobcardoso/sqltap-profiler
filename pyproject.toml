@@ -1,3 +1,54 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sqltap-profiler"
+version = "1.0.0"
+description = "Enhanced SQL profiling and introspection for applications using sqlalchemy"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Bruno Cardoso", email = "bruno@skywatch.com"}
+]
+maintainers = [
+    {name = "Bruno Cardoso", email = "bruno@skywatch.com"}
+]
+keywords = ["sqlalchemy", "sql", "profiling", "debugging", "performance"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Software Development :: Debugging",
+    "Topic :: Software Development :: Testing"
+]
+dependencies = [
+    "SQLAlchemy >= 1.4",
+    "Mako >= 0.4.1",
+    "Werkzeug >= 0.9.6",
+    "sqlparse >= 0.1.15"
+]
+
+[project.urls]
+Homepage = "https://github.com/brunobcardoso/sqltap-profiler"
+Repository = "https://github.com/brunobcardoso/sqltap-profiler"
+Issues = "https://github.com/brunobcardoso/sqltap-profiler/issues"
+Documentation = "https://github.com/brunobcardoso/sqltap-profiler#readme"
+
+[tool.setuptools]
+packages = ["sqltap"]
+package-data = {sqltap = ["templates/*.mako"]}
+
 [tool.isort]
 profile = 'black'
 multi_line_output = 3
