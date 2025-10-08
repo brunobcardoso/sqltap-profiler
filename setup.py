@@ -16,6 +16,7 @@ This enhanced version includes:
    * Improved AWS Lambda support
    * Enhanced reporting capabilities
    * Modern Python 3 support
+   * NEW in v1.1.0: Comprehensive profiling utilities
 
 Original sqltap: https://github.com/inconshreveable/sqltap
 Enhanced version: https://github.com/brunobcardoso/sqltap-profiler
@@ -23,12 +24,12 @@ Enhanced version: https://github.com/brunobcardoso/sqltap-profiler
 
 setup(
     name="sqltap-profiler",
-    version="1.0.0",
+    version="1.1.0",
     description=("Enhanced SQL profiling and introspection for applications using "
                  "sqlalchemy with improved performance and modern features"),
     long_description=long_description,
     author="Bruno Cardoso",
-    author_email="bruno@skywatch.com",
+    author_email="cardosobrunob@gmail.com",
     url="https://github.com/brunobcardoso/sqltap-profiler",
     packages=["sqltap"],
     package_data={"sqltap": ["templates/*.mako"]},
