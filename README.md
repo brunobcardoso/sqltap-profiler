@@ -53,6 +53,94 @@ SQLTap provides text profiling report in a human-readable way.
     statistics = profiler.collect()
     sqltap.report(statistics, "report.txt", report_format="text")
 
+## Profiling Utilities (NEW in v1.1.0)
+
+SQLTap now includes convenient profiling utilities that work anywhere in your application - tests, development, staging, or production. The `sqltap.profiling` module provides a simple context manager with comprehensive statistics and automatic HTML report generation.
+
+### Basic Usage
+
+    from sqltap.profiling import sqltap_profiler
+
+    def test_my_endpoint():
+        with sqltap_profiler("my-test") as stats:
+            response = my_function()
+
+        # Assert on query count
+        assert stats.query_count <= 5
+        assert stats.total_time <= 1.0
+
+### Detailed Analysis
+
+Check for N+1 queries and analyze query patterns:
+
+    def test_check_n_plus_one():
+        with sqltap_profiler("n-plus-one-test") as stats:
+            # Your code that might have N+1 queries
+            posts = session.query(Post).all()
+            for post in posts:
+                author = post.author  # Potential N+1!
+
+        # Check for N+1 queries
+        selects = stats.get_queries_by_type('SELECT')
+        for qg in selects:
+            assert qg.query_count <= 10, f"Potential N+1: {qg.sql_text[:100]}"
+
+        # Print detailed summary
+        print(stats.summary())
+
+### Available Statistics
+
+The `stats` object provides comprehensive query metrics:
+
+    # Summary statistics
+    stats.query_count      # Total number of queries
+    stats.unique_queries   # Number of unique SQL queries
+    stats.total_time       # Total DB time in seconds
+    stats.mean_time        # Mean query time
+    stats.median_time      # Median query time
+    stats.min_time         # Fastest query
+    stats.max_time         # Slowest query
+    
+    # Query analysis
+    stats.query_groups              # All query groups (sorted by total time)
+    stats.get_queries_by_type('SELECT')  # Filter by query type
+    stats.get_slowest_query()       # Get the slowest query group
+    stats.summary()                 # Get formatted text summary
+
+### Custom Report Location
+
+Save reports to a custom directory:
+
+    with sqltap_profiler("my-test", report_dir="/tmp/reports") as stats:
+        response = my_function()
+
+### Disable Report Generation
+
+For CI environments or when you only need assertions:
+
+    with sqltap_profiler("my-test", save_report=False) as stats:
+        response = my_function()
+
+    assert stats.query_count <= 5
+
+### Integration with pytest fixtures
+
+    import pytest
+    from sqltap.profiling import sqltap_profiler
+
+    @pytest.fixture
+    def db_profiler():
+        """Fixture that profiles all DB queries in a test"""
+        with sqltap_profiler(save_report=False) as stats:
+            yield stats
+
+    def test_with_profiler(db_profiler):
+        # Your test code here
+        response = my_function()
+
+        # Assert on the profiler stats
+        assert db_profiler.query_count <= 10
+
 ## Advanced Example
 
     import sqltap
