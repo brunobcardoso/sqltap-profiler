@@ -53,7 +53,7 @@ setup(
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
         'Topic :: Database',
-        'Topic :: Software Development :: Debugging',
+        'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Testing'
     ],
     keywords="sqlalchemy sql profiling debugging performance",
