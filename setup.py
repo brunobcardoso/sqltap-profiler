@@ -24,7 +24,7 @@ Enhanced version: https://github.com/brunobcardoso/sqltap-profiler
 
 setup(
     name="sqltap-profiler",
-    version="1.1.0",
+    version="1.2.0",
     description=("Enhanced SQL profiling and introspection for applications using "
                  "sqlalchemy with improved performance and modern features"),
     long_description=long_description,
