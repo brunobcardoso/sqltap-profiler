@@ -170,3 +170,52 @@ class TestSQLTapProfiling:
         assert len(stats.query_groups) == 0
         assert stats.get_slowest_query() is None
 
+
+    def test_pytest_fixture_pattern(self):
+        """Test that stats are accessible when used in pytest fixture pattern."""
+        self.setUp()
+        
+        def fixture_wrapper():
+            with sqltap_profiler("test-fixture", save_report=False) as stats:
+                yield stats
+        
+        fixture_gen = fixture_wrapper()
+        stats = next(fixture_gen)
+        
+        # Execute queries AFTER fixture yields
+        self.session.add(TestModel(name="fixture_test1"))
+        self.session.commit()
+        
+        assert stats.query_count > 0, "Stats should be accessible during fixture usage"
+        
+        try:
+            next(fixture_gen)
+        except StopIteration:
+            pass
+
+    def test_stats_collected_once_and_cached(self):
+        """Test that stats are collected once and cached for deterministic results."""
+        self.setUp()
+        
+        with sqltap_profiler("test-cache", save_report=False) as stats:
+            self.session.add(TestModel(name="test"))
+            self.session.commit()
+            
+            count1 = stats.query_count
+            count2 = stats.query_count
+            
+            assert count1 == count2, "Query count should be cached"
+
+    def test_lazy_collection_with_no_access(self):
+        """Test backward compatibility - stats collected even if never accessed."""
+        self.setUp()
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with sqltap_profiler("test-no-access", save_report=True, report_dir=tmpdir):
+                self.session.add(TestModel(name="test"))
+                self.session.commit()
+                # Never access stats
+            
+            # Report should still be generated
+            files = os.listdir(tmpdir)
+            assert any(f.endswith('.html') for f in files)

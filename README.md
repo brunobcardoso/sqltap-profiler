@@ -125,13 +125,15 @@ For CI environments or when you only need assertions:
 
 ### Integration with pytest fixtures
 
+SQLTap profiler works seamlessly with pytest fixtures, allowing you to profile queries across your entire test without wrapping test code in `with` statements:
+
     import pytest
     from sqltap.profiling import sqltap_profiler
 
     @pytest.fixture
-    def db_profiler():
+    def db_profiler(request):
         """Fixture that profiles all DB queries in a test"""
-        with sqltap_profiler(save_report=False) as stats:
+        with sqltap_profiler(request.node.name, save_report=False) as stats:
             yield stats
 
     def test_with_profiler(db_profiler):
@@ -140,6 +142,31 @@ For CI environments or when you only need assertions:
 
         # Assert on the profiler stats
         assert db_profiler.query_count <= 10
+
+        # Log detailed summary for debugging
+        print(profile_db.summary())
+
+### Using with Report Generation
+
+Enable reports in your local environment:
+
+    @pytest.fixture
+    def db_profiler(request):
+        """Fixture with automatic report generation"""
+        save_report = os.getenv("SAVE_SQLTAP_REPORTS", "false") == "true"
+        with sqltap_profiler(request.node.name, save_report=save_report) as stats:
+            yield stats
+
+    # Run tests with reports:
+    # SAVE_SQLTAP_REPORTS=true pytest tests/
+
+    def test_list_users(db_profiler):
+        users = db.query(User).all()
+        
+        # Check for N+1 queries
+        selects = db_profiler.get_queries_by_type('SELECT')
+        for qg in selects:
+            assert qg.query_count <= 2, f"N+1 detected: {qg.sql_text[:80]}"
 
 ## Advanced Example
 

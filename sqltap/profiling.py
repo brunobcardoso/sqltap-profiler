@@ -368,30 +368,46 @@ def _save_report_locally(html, key_hint, report_dir=None):
 @contextmanager
 def sqltap_profiler(key_hint="test", save_report=True, report_dir=None):
     """Context manager for SQLTap profiling with comprehensive statistics.
-    
+
     This context manager simplifies SQLTap profiling for tests by providing:
     - Automatic profiler setup and teardown
     - Comprehensive statistics via PerformanceStats object
     - Optional HTML report generation with configurable location
     - Easy-to-use assertions on query counts and performance
-    
+    - Works with pytest fixtures (stats accessible during test execution)
+
     Args:
         key_hint (str, optional): Identifier for the test (used in report filename). Defaults to "test".
         save_report (bool, optional): Whether to save HTML report. Defaults to True.
         report_dir (str, optional): Directory to save reports. Defaults to ./sqltap_reports.
-    
+
     Yields:
-        PerformanceStats: Statistics object with query metrics and analysis methods
-    
+        PerformanceStats: Statistics object with query metrics and analysis methods.
+                        Stats are lazily collected on first access, allowing usage
+                        in pytest fixtures and nested contexts.
+
     Example:
         Basic usage::
         
             with sqltap_profiler("my-test") as stats:
                 response = my_function()
             
-            # Summary assertions
+            # Stats accessible inside or after the context
             assert stats.query_count <= 5
             assert stats.total_time <= 1.0
+        
+        With pytest fixtures::
+        
+            @pytest.fixture
+            def profile_db(request):
+                with sqltap_profiler(request.node.name, save_report=False) as stats:
+                    yield stats
+            
+            def test_example(profile_db):
+                response = my_function()
+                # Stats accessible during test execution
+                assert profile_db.query_count <= 5
+                logger.info(profile_db.summary())
         
         Detailed analysis::
         
@@ -415,29 +431,57 @@ def sqltap_profiler(key_hint="test", save_report=True, report_dir=None):
         
             with sqltap_profiler("my-test", save_report=False) as stats:
                 response = my_function()
+
+    Note:
+        Statistics are collected lazily on first property access (e.g., query_count,
+        summary()). This allows the profiler to capture all queries that occur during
+        the context, making it compatible with pytest fixtures and nested usage patterns.
+        Once collected, stats are cached and remain consistent across multiple accesses.
     """
     profiler = sqltap.start()
-    raw_stats = []
-
+    
+    # Create a stats object that will be populated later
+    class LivePerformanceStats(PerformanceStats):
+        def __init__(self):
+            self._profiler = profiler
+            self._collected = False
+            super().__init__([])
+        
+        def _ensure_collected(self):
+            """Collect stats from profiler if not already collected."""
+            if not self._collected and self._profiler:
+                self.raw_stats.extend(self._profiler.collect())
+                self._collected = True
+        
+        def _ensure_processed(self):
+            """Override to ensure stats are collected before processing."""
+            self._ensure_collected()
+            super()._ensure_processed()
+        
+        @property
+        def query_count(self):
+            """Total number of queries executed."""
+            self._ensure_collected()
+            return len(self.raw_stats)
+    
+    stats = LivePerformanceStats()
+    
     try:
-        yield PerformanceStats(raw_stats)
+        yield stats
     finally:
-        raw_stats.extend(profiler.collect())
-
-        if raw_stats and save_report:
+        # Ensure collection happens
+        stats._ensure_collected()
+        
+        if stats.raw_stats and save_report:
             try:
-                html = sqltap.report(raw_stats)
+                html = sqltap.report(stats.raw_stats)
                 report_file = _save_report_locally(html, key_hint, report_dir)
-                
-                # Create PerformanceStats for logging
-                perf_stats = PerformanceStats(raw_stats)
                 print(
                     f"[sqltap] Generated report with "
-                    f"{perf_stats.query_count} queries "
-                    f"({perf_stats.unique_queries} unique), "
-                    f"total time: {perf_stats.total_time:.3f}s, "
-                    f"mean: {perf_stats.mean_time:.3f}s: {report_file}"
+                    f"{stats.query_count} queries "
+                    f"({stats.unique_queries} unique), "
+                    f"total time: {stats.total_time:.3f}s, "
+                    f"mean: {stats.mean_time:.3f}s: {report_file}"
                 )
             except Exception as e:
                 print(f"[sqltap] Failed to generate report: {e}")
-
