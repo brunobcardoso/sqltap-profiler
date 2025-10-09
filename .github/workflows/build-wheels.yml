@@ -124,8 +124,26 @@ jobs:
           name: sdist
           path: dist/
 
-      # Optional: show what we’re about to upload
+      # Optional: show what we're about to upload
       - run: ls -l dist
+
+      # Clean up any non-matching version artifacts to prevent uploading old versions
+      - name: Clean up old artifacts
+        run: |
+          echo "Current version from pyproject.toml:"
+          VERSION=$(grep '^version = ' pyproject.toml | cut -d '"' -f 2)
+          echo "Version: $VERSION"
+          echo "Files in dist/ before cleanup:"
+          ls -la dist/
+          # Remove any files that don't match the current version
+          find dist/ -type f -name "*.whl" -o -name "*.tar.gz" | while read file; do
+            if [[ ! "$file" =~ $VERSION ]]; then
+              echo "Removing old version artifact: $file"
+              rm -f "$file"
+            fi
+          done
+          echo "Files in dist/ after cleanup:"
+          ls -la dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
